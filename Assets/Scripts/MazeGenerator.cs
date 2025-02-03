@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
 using Unity.AI.Navigation;
+using static Cell;
 
 public class MazeGenerator : MonoBehaviour
 {
@@ -64,6 +65,7 @@ public class MazeGenerator : MonoBehaviour
             }
         }
 
+        BuildMaze();
         GenerateMaze(null, mazeGrid[0, 0]);
         PlaceGoal(); 
         PlacePlayer();
@@ -72,6 +74,82 @@ public class MazeGenerator : MonoBehaviour
 
         GameManager.instance.SetMazeGrid(mazeGrid);
         GameManager.instance.InitAiController();
+    }
+
+    private void BuildMaze()
+    {
+        GenerateMaze(null, mazeGrid[0, 0]);
+        AlterMaze((mazeWidth * 2) - mazeWidth/2);
+    }
+
+    private void AlterMaze(int numWallsToBreak)
+    {
+        List<Cell> candidates = new List<Cell>();
+
+        // Collect all possible walls that can be broken (not on the outer edge)
+        for (int x = 1; x < mazeWidth - 1; x++)
+        {
+            for (int z = 1; z < mazeHeight - 1; z++)
+            {
+                Cell cell = mazeGrid[x, z];
+
+                // Find valid walls that are not on the outer border
+                if (!cell.CanWalkInFrontDirection() && z > 0) candidates.Add(cell);
+                if (!cell.CanWalkInBackDirection() &&z < mazeHeight - 1) candidates.Add(cell);
+                if (!cell.CanWalkInLeftDirection() && x > 0) candidates.Add(cell);
+                if (!cell.CanWalkInRightDirection() && x < mazeWidth - 1) candidates.Add(cell);
+            }
+        }
+
+        // Randomly break walls
+        int wallsBroken = 0;
+        System.Random rand = new System.Random();
+
+        while (wallsBroken < numWallsToBreak && candidates.Count > 0)
+        {
+            int index = rand.Next(candidates.Count);
+            Cell cell = candidates[index];
+            candidates.RemoveAt(index);
+
+            // Randomly choose a wall to break
+            List<WallType> possibleWalls = cell.GetIntactWalls();
+            if (possibleWalls.Count > 0)
+            {
+                WallType wallToBreak = possibleWalls[rand.Next(possibleWalls.Count)];
+                Cell neighbour = GetNeighbourCell(cell, wallToBreak);
+
+                if (neighbour != null)
+                {
+                    BreakWalls(neighbour, cell);
+                    wallsBroken++;
+                }
+            }
+        }
+    }
+
+    private Cell GetNeighbourCell(Cell cell, WallType wallToBreak)
+    {
+        int x = ((int)cell.transform.position.x);
+        int z = ((int)cell.transform.position.z);
+
+        if (wallToBreak.Equals(WallType.FrontWall))
+        {
+            return mazeGrid[x, z + 1];
+        }
+        if (wallToBreak == WallType.BackWall)
+        {
+            return mazeGrid[x, z - 1];
+        }
+        if (wallToBreak == WallType.LeftWall)
+        {
+            return mazeGrid[x - 1, z];
+        }
+        if (wallToBreak == WallType.RightWall)
+        {
+            return mazeGrid[x + 1, z];
+        }
+
+        return null;
     }
 
     private void InitDifficultyParameters()

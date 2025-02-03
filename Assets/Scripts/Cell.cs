@@ -144,6 +144,22 @@ public class Cell : MonoBehaviour
         return backWall.activeSelf; 
     }
 
+    public List<WallType> GetIntactWalls()
+    {
+        List<WallType> intactWalls = new List<WallType>();
+
+        foreach (var item in walkableDirections)
+        {
+            if (!item.Value)
+            {
+                // can not walk in that direction - wall exists
+                intactWalls.Add(item.Key);
+            }
+        }
+        
+        return intactWalls;
+
+    }
 
 
 }
