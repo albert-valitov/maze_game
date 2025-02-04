@@ -126,22 +126,22 @@ public class Cell : MonoBehaviour
 
     public bool CanWalkInRightDirection()
     {
-        return rightWall.activeSelf;
+        return !rightWall.activeSelf;
     }
 
     public bool CanWalkInLeftDirection()
     {
-        return leftWall.activeSelf;
+        return !leftWall.activeSelf;
     }
 
     public bool CanWalkInFrontDirection() 
     { 
-        return frontWall.activeSelf; 
+        return !frontWall.activeSelf; 
     }
 
     public bool CanWalkInBackDirection() 
     { 
-        return backWall.activeSelf; 
+        return !backWall.activeSelf; 
     }
 
     public List<WallType> GetIntactWalls()

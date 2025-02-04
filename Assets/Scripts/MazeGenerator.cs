@@ -101,15 +101,26 @@ public class MazeGenerator : MonoBehaviour
             }
         }
 
+        List<Cell> priorityCells = new List<Cell>();
+
+        foreach (Cell cell in candidates)
+        {
+            if (cell.GetIntactWalls().Count > 2)
+            {
+                // prioritise cells with more than 2 walls
+                priorityCells.Add(cell);
+            }
+        }
+
         // Randomly break walls
         int wallsBroken = 0;
         System.Random rand = new System.Random();
 
-        while (wallsBroken < numWallsToBreak && candidates.Count > 0)
+        while (wallsBroken < numWallsToBreak && priorityCells.Count > 0)
         {
-            int index = rand.Next(candidates.Count);
-            Cell cell = candidates[index];
-            candidates.RemoveAt(index);
+            int index = rand.Next(priorityCells.Count);
+            Cell cell = priorityCells[index];
+            priorityCells.RemoveAt(index);
 
             // Randomly choose a wall to break
             List<WallType> possibleWalls = cell.GetIntactWalls();
@@ -122,6 +133,31 @@ public class MazeGenerator : MonoBehaviour
                 {
                     BreakWalls(neighbour, cell);
                     wallsBroken++;
+                }
+            }
+        }
+
+        if (wallsBroken < numWallsToBreak)
+        {
+            // still need to break some walls but no more priority cells left -> take other candidates
+            while (wallsBroken < numWallsToBreak && candidates.Count > 0)
+            {
+                int index = rand.Next(candidates.Count);
+                Cell cell = candidates[index];
+                candidates.RemoveAt(index);
+
+                // Randomly choose a wall to break
+                List<WallType> possibleWalls = cell.GetIntactWalls();
+                if (possibleWalls.Count > 0)
+                {
+                    WallType wallToBreak = possibleWalls[rand.Next(possibleWalls.Count)];
+                    Cell neighbour = GetNeighbourCell(cell, wallToBreak);
+
+                    if (neighbour != null)
+                    {
+                        BreakWalls(neighbour, cell);
+                        wallsBroken++;
+                    }
                 }
             }
         }
@@ -169,7 +205,7 @@ public class MazeGenerator : MonoBehaviour
         {
             mazeWidth = 10;
             mazeHeight = 10;
-            enemyCounter = 0;
+            enemyCounter = 10;
             upgradeCounter = 15;
         }
         if (difficulty == 2 )

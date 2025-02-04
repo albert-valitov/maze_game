@@ -52,7 +52,7 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        Patrol();
+        //Patrol();
     }
 
     public Vector3 getCurrentDirection()

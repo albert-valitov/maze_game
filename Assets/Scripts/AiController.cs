@@ -24,6 +24,7 @@ public class AIController : MonoBehaviour
     public float waypointThreshold = 0.1f;
     private float moveSpeed = 1.5f;
     public float cellSize = 1f;
+    private PathFinder pathFinder;
 
     Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
         {
@@ -56,10 +57,10 @@ public class AIController : MonoBehaviour
 
         width = mazeGrid.GetLength(0);
         height = mazeGrid.GetLength(1);
+        pathFinder = new PathFinder(mazeGrid, enemies);
+        nextWaypointIndex = 1;
 
         FindPathForPlayers();
-
-        nextWaypointIndex = 1;
     }
 
     private void FindPathForPlayers()
@@ -68,8 +69,12 @@ public class AIController : MonoBehaviour
 
         for(int i = 0; i < players.Count; i++)
         {
-            List<Cell> path = FindPathForPlayer(players[i]);
-            path = OptimizePathWithUpgrades(path, players[i]);
+            Cell start = mazeGrid[((int)players[i].startPosition.x), ((int)players[i].startPosition.z)];
+            Cell goalCell = GetGoalCell();
+
+            List<Cell> path = pathFinder.FindShortestPath(start, goalCell);
+            //List<Cell> path = FindPathForPlayer(players[i]);
+            //path = OptimizePathWithUpgrades(path, players[i]);
             players[i].SetPathToGoal(path);
 
             if (path.Count < shortestPathCount)
@@ -79,6 +84,11 @@ public class AIController : MonoBehaviour
             }
         }
     }
+
+    private Cell GetGoalCell() {
+        return mazeGrid[((int)goal.transform.position.x), ((int)goal.transform.position.z)];
+    }
+
     void FixedUpdate()
     {
         if (players == null || players.Count == 0) 
@@ -103,7 +113,7 @@ public class AIController : MonoBehaviour
             return;
         }
 
-        CheckForUpgradeMoves(path[nextWaypointIndex]);        
+        //CheckForUpgradeMoves(path[nextWaypointIndex]);        
 
         Vector3 targetPosition = path[nextWaypointIndex].transform.position;
 
@@ -248,7 +258,13 @@ public class AIController : MonoBehaviour
             }
         }
 
-        FindNearestWayPoint(newFocusedPlayer);
+        //FindNearestWayPoint(newFocusedPlayer);
+        Vector3 playerPostion = SnapToGrid(newFocusedPlayer.transform.position);
+        Cell start = mazeGrid[((int)playerPostion.x), ((int)playerPostion.z)];
+        List<Cell> path = pathFinder.FindShortestPath(start, GetGoalCell());
+
+        newFocusedPlayer.SetPathToGoal(path);
+        nextWaypointIndex = 0;
 
         return newFocusedPlayer;
     }
