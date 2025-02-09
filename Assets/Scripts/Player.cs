@@ -17,13 +17,20 @@ public class Player : MonoBehaviour
     public Vector3 startPosition;
     private List<List<Cell>> upgradeCells = new List<List<Cell>>();
     private List<Cell> pathToGoal = new List<Cell>();
+    public bool isGrounded = true;
+    public bool isJumping = false;
+    public float jumpForce = 20f;
+    public float maxScaleFactor = 5f;
+    public float scaleSpeed = 2f;
+    private Vector3 originalScale;
+    private bool isInvulnerable = false;
 
 
-    
     void Start()
     {
         startPosition = transform.position; 
         rb = GetComponent<Rigidbody>();
+        originalScale = transform.localScale;
     }
 
     void Update()
@@ -48,7 +55,31 @@ public class Player : MonoBehaviour
             Move(direction);
         }
 
+        if (Input.GetButtonDown("Jump"))
+        {
+            Jump(new Vector3(direction.x, direction.y, direction.z));
+        }
     }
+
+    public void Jump(Vector3 direction)
+    {
+         Debug.Log("is grounded: " + isGrounded);
+
+         if (isGrounded)
+         {   
+            rb.AddForce(direction + Vector3.up * jumpForce, ForceMode.Impulse);
+            //ScaleCharacter(true);
+            isGrounded = false;
+        }
+    }
+
+    private void ScaleCharacter(bool scalingUp)
+    {
+        // adjust the character's scale smoothly
+        float targetScale = scalingUp ? maxScaleFactor : 1f;
+        transform.localScale = Vector3.Lerp(transform.localScale, originalScale * targetScale, Time.deltaTime * scaleSpeed);
+    }
+
 
     public void Move(Vector3 direction)
     {
@@ -56,6 +87,7 @@ public class Player : MonoBehaviour
         {
             return;
         }
+
         rb.MovePosition(transform.position + direction * moveSpeed * Time.fixedDeltaTime);
     }
 
@@ -118,7 +150,7 @@ public class Player : MonoBehaviour
         {
             moveSpeed = 2f;
             StopCoroutine(ResumeMovementAfterDelay());
-            StartCoroutine(ResumeMovementAfterDelay());
+            StartCoroutine(ResetMovementSpeed());
         }
     }
 
@@ -128,6 +160,17 @@ public class Player : MonoBehaviour
         moveSpeed = 1.5f;
     }
 
+    public void SetInvulnerable(bool isInvulnerable)
+    {
+        this.isInvulnerable = isInvulnerable;
+        rb.isKinematic = isInvulnerable;
+        gameObject.GetComponent<Collider>().isTrigger = isInvulnerable;
+    }
+
+    public bool IsInvulnerable()
+    {
+        return isInvulnerable;
+    }
 
     public void SetMovementPaused(bool value)
     {
@@ -144,11 +187,18 @@ public class Player : MonoBehaviour
     {
         yield return new WaitForSeconds(GameManager.instance.upgradeTime);
 
+        SetInvulnerable(false);
         SetMovementPaused(false);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-       
+        //if (collision.collider.tag == "Enemy")
+        //{
+        //    if (!isInvulnerable)
+        //    {
+        //        Destroy(GetComponent<GameObject>());
+        //    }
+        //}
     }
 }

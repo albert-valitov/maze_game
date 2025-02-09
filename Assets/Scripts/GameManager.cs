@@ -9,41 +9,27 @@ public class GameManager : MonoBehaviour
 
     public AIController aIController;
 
-    private List<Player> players;
+    public List<Player> players;
 
-    private List<Enemy> enemies;
+    public List<Enemy> enemies;
 
-    private List<Upgrade> upgrades;
+    public List<Upgrade> upgrades;
 
-    private Goal goal;
+    public Goal goal;
 
-    private Cell[,] mazeGrid;
+    public Cell[,] mazeGrid;
 
     public bool aiControlled;
 
     public int multiplier = 0;
 
-    public float upgradeTime = 3f;
+    public float upgradeTime = 30f;
     
     void Awake()
     {
         instance = this;
 
-        //if (instance == null)
-        //{
-        //    instance = this;
-        //}
-        //else
-        //{
-        //    Destroy(gameObject); // Prevent duplicate GameManagers
-        //    return;
-        //}
-
-        //DontDestroyOnLoad(gameObject); // Optional: Persist across scenes
-
-        aiControlled = true;
-
-        
+        aiControlled = false;        
     }
 
     public void InitAiController()
@@ -97,6 +83,7 @@ public class GameManager : MonoBehaviour
             {
                 // pause movement of all unaffected players
                 player.SetMovementPaused(true);
+                player.SetInvulnerable(true);
             }
         }
     }

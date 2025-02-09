@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4036564173755625770}
   - component: {fileID: 4318903532424443488}
   - component: {fileID: 5458824961464013010}
-  m_Layer: 6
+  m_Layer: 10
   m_Name: Cube
   m_TagString: Goal
   m_Icon: {fileID: 0}
@@ -119,7 +119,7 @@ GameObject:
   - component: {fileID: 813488102244269944}
   - component: {fileID: 4583159984546353296}
   - component: {fileID: 6168963841167415059}
-  m_Layer: 6
+  m_Layer: 10
   m_Name: Goal
   m_TagString: Goal
   m_Icon: {fileID: 0}
@@ -136,7 +136,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5, y: 1, z: 1.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3117948542928940505}

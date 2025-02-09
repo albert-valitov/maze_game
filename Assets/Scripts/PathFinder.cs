@@ -1,132 +1,171 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using static Cell;
 
-public class PathFinder
+public class PathFinder : MonoBehaviour
 {
-    public Cell[,] mazeGrid;
-    public List<Enemy> enemies;
+    public class Node
+    {
+        public Cell cell;
+        public Vector3Int position;
+        public float cost;
+        public Node parent;
+        public bool inNegativeCycle;
+        public int stepsSinceLastUpgrade;
 
-    public PathFinder(Cell[,] mazeGrid, List<Enemy> enemies)
+        public Node(Cell cell, float cost, Node parent = null, int stepsSinceUpgrade = 0)
+        {
+            this.cell = cell;
+            this.cost = cost;
+            this.parent = parent;
+            inNegativeCycle = false;
+            stepsSinceLastUpgrade = stepsSinceUpgrade;
+            position = Vector3Int.FloorToInt(cell.transform.position);
+        }
+    }
+
+    private int width, height;
+    private Cell[,] mazeGrid;
+
+    Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
+        {
+            {WallType.FrontWall, new Vector3Int(0, 0, 1)},
+            {WallType.BackWall, new Vector3Int(0, 0, -1)},
+            {WallType.LeftWall, new Vector3Int(-1, 0, 0)},
+            {WallType.RightWall, new Vector3Int(1, 0, 0)}
+        };
+
+    Dictionary<Vector3Int, WallType> directionToWallType = new Dictionary<Vector3Int, WallType>
+        {
+            {new Vector3Int(0, 0, 1), WallType.FrontWall},
+            {new Vector3Int(0, 0, -1), WallType.BackWall},
+            {new Vector3Int(-1, 0, 0), WallType.LeftWall},
+            {new Vector3Int(1, 0, 0), WallType.RightWall}
+        };
+
+    public PathFinder(Cell[,] mazeGrid)
     {
         this.mazeGrid = mazeGrid;
-        this.enemies = enemies;
+        width = mazeGrid.GetLength(0);
+        height = mazeGrid.GetLength(1);
     }
 
-    public float GetTileWeight(Cell nextCell, Cell currentCell)
+    public List<Cell> FindPath(Cell start, Cell goal)
     {
-        if (nextCell.isEnemyPlaced())
-        {
-            // high cost if enemy is present
-            return 50f;
-        } 
-            
-        if (nextCell.isUpgradePlaced() && !currentCell.isUpgradePlaced())
-        {
-            // low cost if upgrade present and current cell has no upgrade placed
-            return -2f;
-        }
-        
 
-        return 1f; // Default cost for normal cells
-    }
-    public List<Cell> FindShortestPath(Cell start, Cell goal)
-    {
-        Dictionary<Cell, float> distances = new Dictionary<Cell, float>();
-        Dictionary<Cell, Cell> cameFrom = new Dictionary<Cell, Cell>();
-        SortedDictionary<float, Queue<Cell>> priorityQueue = new SortedDictionary<float, Queue<Cell>>();
-        HashSet<Cell> visited = new HashSet<Cell>();
-        distances[start] = 0;
-        Enqueue(priorityQueue, start, 0);
+        Dictionary<Cell, Node> nodes = new Dictionary<Cell, Node>();
+        nodes[start] = new Node(start, 0, null, 3);
 
-        while (priorityQueue.Count > 0)
+        // Bellman-Ford: relax edges
+        for (int i = 0; i < width * height - 1; i++)
         {
-            Cell current = Dequeue(priorityQueue);
-
-            if (visited.Contains(current))
+            bool updated = false;
+            foreach (var kvp in new Dictionary<Cell, Node>(nodes))
             {
-                // skip already visited cells
-                continue; 
+                Node current = kvp.Value;
+
+                foreach (Vector3Int dir in possibleDirections.Values)
+                {
+                    Vector3Int neighborPos = current.position + dir;
+
+                    if (IsOutOfBounds(neighborPos))
+                    {
+                        continue;
+                    }
+
+                    Cell neighborCell = GetCell(neighborPos);
+
+                    if (!current.cell.CanWalk(directionToWallType[dir]))
+                    {
+                        // wall blocks movement in that direction
+                        continue;
+                    }
+
+                    float baseCost = GetWeight(neighborCell);
+
+                    int newStepsSinceUpgrade = current.stepsSinceLastUpgrade + 1;
+
+                    // decide if we should pick up the upgrade if one exists
+                    if (neighborCell.isUpgradePlaced())
+                    {
+                        if (newStepsSinceUpgrade <= 3)
+                        {
+                            // upgrade was picked up recently - treat it like a regular/empty cell 
+                            baseCost = 1;
+                        } else
+                        {
+                            // upgrade is picked up - reset the counter
+                            newStepsSinceUpgrade = 0;
+                        }
+                    }
+
+                    float newCost = current.cost + baseCost;
+
+                    if (!nodes.ContainsKey(neighborCell) || newCost < nodes[neighborCell].cost)
+                    {
+                        nodes[neighborCell] = new Node(neighborCell, newCost, current, newStepsSinceUpgrade);
+                        updated = true;
+                    }
+                }
             }
-               
-
-            visited.Add(current);
-
-            if (current == goal)
+            if (!updated)
             {
                 break;
             }
-            foreach (Cell neighbor in GetWalkableNeighbors(current))
-            {
-                if (!visited.Contains(neighbor))
-                {
-                    float newDist = distances[current] + GetTileWeight(neighbor, current);
-
-                    if (!distances.ContainsKey(neighbor) || newDist < distances[neighbor])
-                    {
-                        distances[neighbor] = newDist;
-                        cameFrom[neighbor] = current;
-                        Enqueue(priorityQueue, neighbor, newDist);
-                    }
-                }
-                 
-            }
-        }
-
-        return ReconstructPath(cameFrom, start, goal);
-    }
-
-    private void Enqueue(SortedDictionary<float, Queue<Cell>> queue, Cell cell, float priority)
-    {
-        if (!queue.ContainsKey(priority))
-        {
-            queue[priority] = new Queue<Cell>();
-        }
-
-        queue[priority].Enqueue(cell);
-    }
-
-    private Cell Dequeue(SortedDictionary<float, Queue<Cell>> queue)
-    {
-        var firstPair = queue.First();
-        Cell cell = firstPair.Value.Dequeue();
-
-        if (firstPair.Value.Count == 0) 
-        {
-            queue.Remove(firstPair.Key);
-        }
             
-        return cell;
+        }
+
+        return ReconstructPath(nodes, goal);
     }
 
-
-private List<Cell> GetWalkableNeighbors(Cell cell)
+    private Cell GetCell(Vector3Int position)
     {
-        List<Cell> neighbors = new List<Cell>();
-        int x = ((int)cell.transform.position.x);
-        int z = ((int)cell.transform.position.z);
-
-        if (cell.CanWalkInFrontDirection()) neighbors.Add(mazeGrid[x, z + 1]);
-        if (cell.CanWalkInBackDirection()) neighbors.Add(mazeGrid[x, z - 1]);
-        if (cell.CanWalkInLeftDirection()) neighbors.Add(mazeGrid[x - 1, z]);
-        if (cell.CanWalkInRightDirection()) neighbors.Add(mazeGrid[x + 1, z]);
-
-        return neighbors;
+        return mazeGrid[position.x, position.z];
     }
 
-    private List<Cell> ReconstructPath(Dictionary<Cell, Cell> cameFrom, Cell start, Cell goal)
+    private bool IsOutOfBounds(Vector3Int position)
+    {
+        int x = position.x;
+        int z = position.z;
+
+        return x < 0 || x > width - 1 || z < 0 || z > height - 1;
+    }
+
+    private List<Cell> ReconstructPath(Dictionary<Cell, Node> nodes, Cell goal)
     {
         List<Cell> path = new List<Cell>();
-        Cell current = goal;
+
+        if (!nodes.ContainsKey(goal)) 
+        {
+            // no path found
+            return path;
+        }
+       
+
+        Node current = nodes[goal];
 
         while (current != null)
         {
-            path.Add(current);
-            current = cameFrom.ContainsKey(current) ? cameFrom[current] : null;
+            path.Add(current.cell);
+            current = current.parent;
         }
 
-        path.Reverse(); // Start to goal order
+        path.Reverse();
+
         return path;
     }
 
+    private float GetWeight(Cell cell)
+    {
+        // TODO: invincible & goal weighting
+
+        if (cell.isUpgradePlaced())
+        {
+            // motivate to walk a detour to pick up an upgrade
+            return -3f;
+        }
+
+        // regular/empty cell
+        return 1f;
+    }
 }

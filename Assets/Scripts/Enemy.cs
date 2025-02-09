@@ -52,7 +52,7 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        //Patrol();
+        Patrol();
     }
 
     public Vector3 getCurrentDirection()
@@ -141,16 +141,39 @@ public class Enemy : MonoBehaviour
         return new Vector3(x, position.y, z);
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        
+
+        //if (other.tag == "Player")
+        //{
+        //    foreach (Player player in GameManager.instance.players)
+        //    {
+        //        if (player == other.gameObject)
+        //        {
+        //            if (!player.IsInvulnerable())
+        //            {
+        //                Destroy(other.gameObject);
+        //            }
+        //        }
+        //    }
+        //}
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.collider.tag == "Player")
+        Player player = collision.gameObject.GetComponent<Player>();
+
+        if (player != null)
         {
-            Destroy(collision.gameObject);
-            // TODO: play sound when player is destroyed
+            if (!player.IsInvulnerable())
+            {
+                Destroy(player.gameObject);
+            }
         }
     }
 
-   
+
     private Vector3 GetRandomValidDirection(Vector3 currentDirection, Vector3 position)
     {
         // Possible movement directions
