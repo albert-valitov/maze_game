@@ -94,7 +94,7 @@ public class MazeGenerator : MonoBehaviour
             mazeGrid[0,0], mazeGrid[1,0], mazeGrid[1,1], mazeGrid[0,1],                                 // safe space for player in bottom left
             mazeGrid[maxX,0], mazeGrid[maxX-1,0], mazeGrid[maxX,1], mazeGrid[maxX-1,1],                 // safe space for player in bottom right
             mazeGrid[0,maxZ], mazeGrid[1,maxZ], mazeGrid[1,maxZ-1], mazeGrid[0,maxZ-1],                 // safe space for player in top left
-            mazeGrid[maxX,maxZ], mazeGrid[maxZ-1,maxZ-1], mazeGrid[maxX,maxZ], mazeGrid[maxX-1,maxZ-1]  // safe space for player in bottom right
+            mazeGrid[maxX,maxZ], mazeGrid[maxX,maxZ-1], mazeGrid[maxX-1,maxZ], mazeGrid[maxX-1,maxZ-1]  // safe space for player in bottom right
         };
 
         GameManager.instance.playerSafeSpace = playerSafeSpace;

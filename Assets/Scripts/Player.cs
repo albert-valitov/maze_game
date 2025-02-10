@@ -73,14 +73,6 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void ScaleCharacter(bool scalingUp)
-    {
-        // adjust the character's scale smoothly
-        float targetScale = scalingUp ? maxScaleFactor : 1f;
-        transform.localScale = Vector3.Lerp(transform.localScale, originalScale * targetScale, Time.deltaTime * scaleSpeed);
-    }
-
-
     public void Move(Vector3 direction)
     {
         if (IsMovementPaused())
@@ -98,7 +90,7 @@ public class Player : MonoBehaviour
             return;
         }
 
-        Vector3 newPosition = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
+        Vector3 newPosition = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.fixedDeltaTime);
         rb.MovePosition(newPosition);
     }
 
@@ -148,8 +140,7 @@ public class Player : MonoBehaviour
 
         if (isUpgraded)
         {
-            moveSpeed = 2f;
-            StopCoroutine(ResumeMovementAfterDelay());
+            moveSpeed = 3f;
             StartCoroutine(ResetMovementSpeed());
         }
     }

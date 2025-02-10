@@ -12,7 +12,7 @@ using static UnityEngine.UI.Image;
 public class Enemy : MonoBehaviour
 {
     public Rigidbody rb;
-    public float moveSpeed = 1.9f;
+    private float moveSpeed = 0.3f;
     public float cellSize = 1f;
     private Cell[,] mazeGrid;
     public Vector3 targetPosition;
@@ -51,23 +51,28 @@ public class Enemy : MonoBehaviour
         transform.position = spawnLocation;
         positionHistory.Add(spawnLocation);
 
-        targetPosition = GetNextWayPoint(transform.position);        
+        targetPosition = GetNextWayPoint(transform.position);
+
+        // acts like a noise detactor, if a player enters the sphere, the enemy will be alarmed and move towards the point where the collision happened
+        SphereCollider playerDetector = GetComponent<SphereCollider>();
     }
 
     private void Move(Vector3 target)
     {
-        Vector3 newPosition = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
-        rb.Move(newPosition, Quaternion.identity);
+        Vector3 newPosition = Vector3.MoveTowards(transform.position, target, Time.deltaTime * moveSpeed);
+
+        transform.position = newPosition;
+
+        //rb.MovePosition(newPosition);
     }
 
     void Update()
     {
-        Move(targetPosition);
+        Move(targetPosition);        
 
-        if (rb.position == targetPosition)
+        if (transform.position == targetPosition)
         {
             UpdatePostionHistory(targetPosition);
-
             targetPosition = GetNextWayPoint(transform.position);
         }        
     }

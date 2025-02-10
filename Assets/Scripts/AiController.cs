@@ -22,7 +22,6 @@ public class AIController : MonoBehaviour
     private Player focusedPlayer;
     private int nextWaypointIndex;
     public float waypointThreshold = 0.1f;
-    private float moveSpeed = 1.5f;
     public float cellSize = 1f;
     private PathFinder pathFinder;
 
@@ -263,10 +262,7 @@ public class AIController : MonoBehaviour
     private void MoveAllPlayers(Vector3 targetPosition)
     {
         GetEndangeredPlayers(targetPosition);
-        if (IsNextMoveDangerous())
-        {
-
-        }
+        
         Vector3 direction = (targetPosition - focusedPlayer.transform.position).normalized;
 
         focusedPlayer.MoveToTarget(targetPosition);

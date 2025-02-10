@@ -14,9 +14,22 @@ public class MainMenu : MonoBehaviour
     }
     public void OnPlay()
     {
-        PlayerPrefs.SetInt("Difficulty", (int) selectedDifficulty);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        GameManager.instance.aiControlled = false;
+        ChangeScene();
+    }
 
+    public void OnAi()
+    {
+        GameManager.instance.aiControlled = true;
+        ChangeScene();
+    }
+
+    
+
+    private void ChangeScene()
+    {
+        PlayerPrefs.SetInt("Difficulty", (int)selectedDifficulty);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);        
     }
 
     public void OnQuit()

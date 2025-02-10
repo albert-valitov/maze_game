@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEngine;
 using System.Collections.Generic;
 using static UnityEditor.Experimental.GraphView.GraphView;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -23,15 +24,35 @@ public class GameManager : MonoBehaviour
 
     public int multiplier = 0;
 
-    public float upgradeTime = 30f;
+    public float upgradeTime = 3.0f;
 
     public List<Cell> playerSafeSpace = new List<Cell>();
+
+    public bool gameOver;
     
     void Awake()
     {
-        instance = this;
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject); // Persist between scenes
+        }
+        else
+        {
+            Destroy(gameObject); // Prevent duplicates
+        }
+        
+    }
 
-        aiControlled = false;        
+    private void Start()
+    {
+        
+    }
+   
+
+    private void Update()
+    {
+       
     }
 
     public void InitAiController()
@@ -102,13 +123,14 @@ public class GameManager : MonoBehaviour
                 {
                     // disable upgrade effect when upgraded player dies or reaches goal
                     player.SetMovementPaused(false);
+                    player.SetInvulnerable(false);
                 }
             }
 
 
             if (players.Count == 0)
             {
-                // TODO: game is over -> calculate score with multiplier. If multiplier 0 -> no player made it to the goal -> 0 points
+                gameOver = true;
             }
         }
     }
@@ -129,6 +151,18 @@ public class GameManager : MonoBehaviour
     public bool IsPlayerSafeSpace(Cell cell)
     {
         return playerSafeSpace.Contains(cell);
+    }
+
+    public void RestartGame()
+    {
+        gameOver = false;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitToMenu()
+    {
+        gameOver = false;
+        SceneManager.LoadScene("MainMenu");
     }
 
 }
