@@ -24,6 +24,8 @@ public class GameManager : MonoBehaviour
     public int multiplier = 0;
 
     public float upgradeTime = 30f;
+
+    public List<Cell> playerSafeSpace = new List<Cell>();
     
     void Awake()
     {
@@ -122,6 +124,11 @@ public class GameManager : MonoBehaviour
         {
             aIController.ChangeFocusedPlayer(player);
         }
+    }
+
+    public bool IsPlayerSafeSpace(Cell cell)
+    {
+        return playerSafeSpace.Contains(cell);
     }
 
 }

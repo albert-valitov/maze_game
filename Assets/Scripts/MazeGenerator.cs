@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections;
 using Unity.AI.Navigation;
 using static Cell;
+using static Unity.Burst.Intrinsics.X86;
 
 public class MazeGenerator : MonoBehaviour
 {
@@ -35,6 +36,8 @@ public class MazeGenerator : MonoBehaviour
 
     private List<Player> players;
 
+    private List<Cell> playerSafeSpace;
+
     void Awake()
     {
         DontDestroyOnLoad(this);
@@ -65,6 +68,9 @@ public class MazeGenerator : MonoBehaviour
             }
         }
 
+        GameManager.instance.SetMazeGrid(mazeGrid);
+
+        SetPlayerSafeSpace();
         BuildMaze();
         GenerateMaze(null, mazeGrid[0, 0]);
         PlaceGoal(); 
@@ -72,14 +78,32 @@ public class MazeGenerator : MonoBehaviour
         PlaceUpgrades();
         PlaceEnemy();
 
-        GameManager.instance.SetMazeGrid(mazeGrid);
+        
         GameManager.instance.InitAiController();
+    }
+
+    /*
+     * Define safe space for players where enemies can not spawn or walk through to provide some sort of fairness at the beginning of the game
+    */
+    private void SetPlayerSafeSpace()
+    {
+        int maxX = mazeWidth - 1;
+        int maxZ = mazeHeight - 1;
+
+        playerSafeSpace = new List<Cell> {
+            mazeGrid[0,0], mazeGrid[1,0], mazeGrid[1,1], mazeGrid[0,1],                                 // safe space for player in bottom left
+            mazeGrid[maxX,0], mazeGrid[maxX-1,0], mazeGrid[maxX,1], mazeGrid[maxX-1,1],                 // safe space for player in bottom right
+            mazeGrid[0,maxZ], mazeGrid[1,maxZ], mazeGrid[1,maxZ-1], mazeGrid[0,maxZ-1],                 // safe space for player in top left
+            mazeGrid[maxX,maxZ], mazeGrid[maxZ-1,maxZ-1], mazeGrid[maxX,maxZ], mazeGrid[maxX-1,maxZ-1]  // safe space for player in bottom right
+        };
+
+        GameManager.instance.playerSafeSpace = playerSafeSpace;
     }
 
     private void BuildMaze()
     {
         GenerateMaze(null, mazeGrid[0, 0]);
-        AlterMaze((mazeWidth * 2) - mazeWidth/2);
+        AlterMaze((mazeWidth * 2));
     }
 
     private void AlterMaze(int numWallsToBreak)
@@ -198,14 +222,14 @@ public class MazeGenerator : MonoBehaviour
         {
             mazeWidth = 5;
             mazeHeight = 5;
-            enemyCounter = 0;
+            enemyCounter = 1;
             upgradeCounter = 8;
         }
         if (difficulty == 1 || true)
         {
             mazeWidth = 10;
             mazeHeight = 10;
-            enemyCounter = 10;
+            enemyCounter = 4;
             upgradeCounter = 15;
         }
         if (difficulty == 2 )
@@ -255,6 +279,11 @@ public class MazeGenerator : MonoBehaviour
 
     private bool IsValidEnemyPlacement(int x, int z)
     {
+        if (playerSafeSpace.Contains(mazeGrid[x, z]))
+        {
+            return false;
+        }
+
         if (IsValidPlacement(mazeGrid[x, z]))
         {
             return ValidateArea(x, z);
@@ -345,14 +374,8 @@ public class MazeGenerator : MonoBehaviour
 
     private bool IsValidPlacement(Cell cell)
     {
-       if (cell.isUpgradePlaced())
+        if (IsInPlayerSafeSpace(cell)) 
         {
-            // there is already an upgrade placed
-            return false;
-        }
-       if (cell.isEnemyPlaced())
-        {
-            // enemy already placed
             return false;
         }
         if (goalCell.Equals(cell))
@@ -360,13 +383,29 @@ public class MazeGenerator : MonoBehaviour
             // the gaol is already placed in this cell
             return false;
         }
-        if (IsCornerCell(((int)cell.transform.position.x), ((int)cell.transform.position.z)))
+        if (cell.isUpgradePlaced())
         {
-            // player start position is in this cell
+            // there is already an upgrade placed
+            return false;
+        }
+        if (cell.isEnemyPlaced())
+        {
+            // enemy already placed
             return false;
         }
         
+        //if (IsCornerCell(((int)cell.transform.position.x), ((int)cell.transform.position.z)))
+        //{
+        //    // player start position is in this cell
+        //    return false;
+        //}
+        
         return true;
+    }
+
+    private bool IsInPlayerSafeSpace(Cell cell)
+    {
+        return playerSafeSpace.Contains(cell);
     }
 
     private void GenerateMaze(Cell previousCell, Cell currentCell)

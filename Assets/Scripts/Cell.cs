@@ -40,9 +40,22 @@ public class Cell : MonoBehaviour
         { WallType.RightWall, false }
     };
 
+    Dictionary<Vector3Int, WallType> directionToWallType = new Dictionary<Vector3Int, WallType>
+        {
+            {new Vector3Int(0, 0, 1), WallType.FrontWall},
+            {new Vector3Int(0, 0, -1), WallType.BackWall},
+            {new Vector3Int(-1, 0, 0), WallType.LeftWall},
+            {new Vector3Int(1, 0, 0), WallType.RightWall}
+        };
+
     public bool CanWalk(WallType wallType)
     {
         return walkableDirections.ContainsKey(wallType) && walkableDirections[wallType];
+    }
+
+    public bool CanWalk(Vector3Int position)
+    {
+        return CanWalk(directionToWallType[position]);
     }
 
     public void SetVisited()

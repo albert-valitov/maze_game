@@ -1,58 +1,86 @@
+using NUnit.Framework.Constraints;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static Cell;
+using static UnityEngine.GraphicsBuffer;
 using static UnityEngine.UI.Image;
 
 public class Enemy : MonoBehaviour
 {
-    public float moveSpeed = 1.9f;          // Speed of movement
-    public float cellSize = 1f;          // Size of one cell in the maze (default 1 unit)
-    public int stepsToMove = 3;        // Number of cells to move before returning
-
-    public Vector3[] wayPoints;
-    public int targetPoint;
+    public Rigidbody rb;
+    public float moveSpeed = 1.9f;
+    public float cellSize = 1f;
+    private Cell[,] mazeGrid;
+    public Vector3 targetPosition;
     
-    private Vector3 spawnLocation;       // Spawn position of the enemy
-    private Vector3 currentDirection;    // Current movement direction
-    private bool movingForward = true;  // True if moving away from spawn, false if returning
+    private Vector3 spawnLocation;
+    private Vector3 currentDirection = Vector3.zero;
+    private List<Vector3> movementHistory = new List<Vector3>();
+    private List<Vector3> positionHistory = new List<Vector3>();
+    private int positionLimit = 6;
+    private int historyLimit = 6;
+
+
+    Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
+        {
+            {WallType.FrontWall, new Vector3Int(0, 0, 1)},
+            {WallType.BackWall, new Vector3Int(0, 0, -1)},
+            {WallType.LeftWall, new Vector3Int(-1, 0, 0)},
+            {WallType.RightWall, new Vector3Int(1, 0, 0)}
+        };
+
+    Dictionary<Vector3Int, WallType> directionToWallType = new Dictionary<Vector3Int, WallType>
+        {
+            {new Vector3Int(0, 0, 1), WallType.FrontWall},
+            {new Vector3Int(0, 0, -1), WallType.BackWall},
+            {new Vector3Int(-1, 0, 0), WallType.LeftWall},
+            {new Vector3Int(1, 0, 0), WallType.RightWall}
+        };
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // visiting the first waypoint (waypoint[0]) makes no sense, since the first waypoint is always the spawn location
-        targetPoint = 1;
+        rb = GetComponent<Rigidbody>();
+        mazeGrid = GameManager.instance.mazeGrid;
 
         spawnLocation = SnapToGrid(transform.position);
         transform.position = spawnLocation;
+        positionHistory.Add(spawnLocation);
 
-        // Set initial direction
-        currentDirection = GetRandomValidDirection(Vector3.zero, transform.position);
-               
-        FindPath();
+        targetPosition = GetNextWayPoint(transform.position);        
     }
 
-    private void Patrol()
+    private void Move(Vector3 target)
     {
-        if (movingForward)
-        {
-            MoveForward();
-        }
-        else
-        {
-            MoveBackward();
-        }
-    }
-
-    public List<Vector3> GetPatrollingWayPoints()
-    {
-        return wayPoints.ToList();
+        Vector3 newPosition = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
+        rb.Move(newPosition, Quaternion.identity);
     }
 
     void Update()
     {
-        Patrol();
+        Move(targetPosition);
+
+        if (rb.position == targetPosition)
+        {
+            UpdatePostionHistory(targetPosition);
+
+            targetPosition = GetNextWayPoint(transform.position);
+        }        
+    }
+
+    private void UpdatePostionHistory(Vector3 position)
+    {
+        positionHistory.Add(position);
+
+        if (positionHistory.Count() > positionLimit)
+        {
+            // FIFO
+            positionHistory.RemoveAt(0);
+        }
     }
 
     public Vector3 getCurrentDirection()
@@ -62,76 +90,9 @@ public class Enemy : MonoBehaviour
 
     private void FixedUpdate()
     {
-        //Patrol();
+       
     }
 
-    private void MoveBackward()
-    {
-
-        if(transform.position == wayPoints[targetPoint])
-        {
-            DecreaseTargetPointCounter();
-        }
-
-        transform.position = Vector3.MoveTowards(transform.position, wayPoints[targetPoint], Time.deltaTime / moveSpeed);
-        
-        if (targetPoint == 0)
-        {
-            movingForward = true;
-        }
-    }
-
-    private void MoveForward()
-    {
-        if (transform.position == wayPoints[targetPoint])
-        {
-            IncreaseTargetPointCounter();
-        }
-
-        transform.position = Vector3.MoveTowards(transform.position, wayPoints[targetPoint], Time.deltaTime / moveSpeed);
-
-        if (targetPoint == stepsToMove - 1)
-        {
-            movingForward = false;
-        }
-    }
-
-    private void IncreaseTargetPointCounter()
-    {
-        targetPoint++;
-    }
-
-    private void DecreaseTargetPointCounter()
-    {
-        targetPoint--;
-    }
-
-    private void FindPath()
-    {
-        wayPoints = new Vector3[stepsToMove];
-
-        Vector3 targetLocation = spawnLocation;
-
-        for (int i = 0; i < stepsToMove; i++)
-        {
-            if (i == 0)
-            {
-                // first waypoint is the spawn location
-                wayPoints[i] = targetLocation;
-                
-            } else
-            {
-                if (IsObjectInDirection(currentDirection, targetLocation))
-                {
-                    currentDirection = GetRandomValidDirection(currentDirection, targetLocation);
-                }
-                targetLocation = targetLocation + currentDirection;
-
-                wayPoints[i] = targetLocation;
-            }
-            //Debug.Log("Waypoint " + i + ": " +  wayPoints[i]);
-        }
-    }
     private Vector3 SnapToGrid(Vector3 position)
     {
         // snap position to the nearest cell center
@@ -139,25 +100,6 @@ public class Enemy : MonoBehaviour
         float z = Mathf.Round(position.z / cellSize) * cellSize;
 
         return new Vector3(x, position.y, z);
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        
-
-        //if (other.tag == "Player")
-        //{
-        //    foreach (Player player in GameManager.instance.players)
-        //    {
-        //        if (player == other.gameObject)
-        //        {
-        //            if (!player.IsInvulnerable())
-        //            {
-        //                Destroy(other.gameObject);
-        //            }
-        //        }
-        //    }
-        //}
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -173,26 +115,136 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private Vector3 GetNextWayPoint(Vector3 position)
+    {
+        List<Vector3> allowedDirections = new List<Vector3>();
+        position = SnapToGrid(position);
+        Cell currentCell = mazeGrid[((int)position.x), ((int)position.z)];
+
+        foreach (Vector3Int direction in possibleDirections.Values)
+        {
+            if (!currentCell.CanWalk(direction))
+            {
+                continue;
+            }
+            
+            Cell targetCell = mazeGrid[((int)position.x + direction.x), ((int)position.z + direction.z)];
+
+            if (GameManager.instance.IsPlayerSafeSpace(targetCell))
+            {
+                continue;
+            }
+
+            if (direction == -currentDirection)
+            {
+                continue;
+            }
+            allowedDirections.Add(direction);
+        }
+        Vector3 nextBestDirection = GetNextBestDirection(allowedDirections);
+
+        currentDirection = nextBestDirection == Vector3.zero ? -currentDirection : nextBestDirection;
+
+        return currentCell.transform.position + currentDirection;
+    }
+
+    /*
+     * Determines which direction should be taken based on the last visited cells and directions taken
+     */
+    private Vector3 GetNextBestDirection(List<Vector3> directions)
+    {
+        Dictionary<Vector3, float> directionWeights = new Dictionary<Vector3, float>();
+        List<Vector3> shuffledDirections = directions.OrderBy(x => Random.value).ToList();
+
+        foreach (Vector3 dir in possibleDirections.Values)
+        {
+            // init all directions with base weight
+            directionWeights[dir] = 1f;
+        }
+
+        Vector3 currentPosition = SnapToGrid(transform.position);
+
+        foreach (Vector3 dir in movementHistory)
+        {
+            if (dir == Vector3.zero)
+            {
+                continue;
+            }
+
+            if (directionWeights.ContainsKey(dir))
+            {
+                // reduce probability of overused directions
+                directionWeights[dir] *= 0.5f; 
+            }
+
+            if (!positionHistory.Contains(currentPosition + dir))
+            {
+                // encourage to take a direction to a cell that has not been visited yet/in a while
+                directionWeights[dir] += 1f;
+            } else
+            {
+                directionWeights[dir] *= 0.2f;
+            }
+        }
+
+
+        Vector3 bestDirection = Vector3.zero;
+        float bestValue = 0f;
+
+        foreach (Vector3 dir in shuffledDirections)
+        {
+            if (directionWeights[dir] > bestValue)
+            {
+                bestValue = directionWeights[dir];
+                bestDirection = dir;
+            }
+        }
+
+        movementHistory.Add(bestDirection);
+
+        if (movementHistory.Count > historyLimit)
+        {
+            // FIFO
+            movementHistory.RemoveAt(0);
+        }
+        
+        return bestDirection;
+    }
 
     private Vector3 GetRandomValidDirection(Vector3 currentDirection, Vector3 position)
     {
         // Possible movement directions
-        Vector3[] directions = { Vector3.forward, Vector3.right, Vector3.left, Vector3.back};
+        Vector3Int[] directions = { Vector3Int.forward, Vector3Int.right, Vector3Int.left, Vector3Int.back};
 
-        foreach (Vector3 direction in directions)
+        foreach (Vector3Int direction in directions)
         {
-            // look for next posible direction (only one possible valid direction exists at any time)
+            Vector3 targetPosition = position + direction;
+
+            Cell currentCell = mazeGrid[((int)position.x), ((int)position.z)];
+            if (!currentCell.CanWalk(direction))
+            {
+                // wall blocks the way
+                continue;
+            }
+
+            Cell targetCell = mazeGrid[((int)targetPosition.x), ((int)targetPosition.z)];
+
+           
+
+            // look for next posible direction
             if (!IsObjectInDirection(direction, position) && direction != - currentDirection)
             {
-                //Debug.Log("Valid direction found: " + direction.ToString());
-
+                
+                if (GameManager.instance.IsPlayerSafeSpace(targetCell))
+                {
+                    // do not walk into player safe space
+                    continue;
+                }
+                
+                // no object in the way and no player safe space
                 return direction;
             }
         }
-
-        // no valid direction found - move backwards (only happens when reaching a dead end)
-
-        //Debug.Log("NO VALID DIRECTION FOUND!");
 
         return - currentDirection;
     }
@@ -208,7 +260,7 @@ public class Enemy : MonoBehaviour
         // check at the center of the cell if wall/upgrade/goal is ahead - otherwise movement could be locked due to running into the small walls on the edges of a cell
         if (Physics.Raycast(position, direction, out hit, cellSize))
         {
-            bool wallAhead = hit.collider.CompareTag("Wall");
+            //bool wallAhead = hit.collider.CompareTag("Wall");
             bool upgradeAhead = hit.collider.CompareTag("Upgrade");
             bool goalAhead = hit.collider.CompareTag("Goal");
 
@@ -219,7 +271,7 @@ public class Enemy : MonoBehaviour
             //Debug.Log("Object in the way: " + hit.collider.tag);
 
             // players are no obstacles therefore the enemy does not need to evade them
-            return  wallAhead || upgradeAhead || goalAhead;
+            return  upgradeAhead || goalAhead;
         }
         return false;
     }

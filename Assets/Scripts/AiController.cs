@@ -89,7 +89,7 @@ public class AIController : MonoBehaviour
         return mazeGrid[((int)goal.transform.position.x), ((int)goal.transform.position.z)];
     }
 
-    void FixedUpdate()
+    void Update()
     {
         if (players == null || players.Count == 0) 
         {
@@ -181,38 +181,9 @@ public class AIController : MonoBehaviour
         foreach (Player player in players)
         {
             Cell currentCell = GetCurrentCellOfPlayer(player);
-            if (IsEnemyPatrollingInCell(currentCell))
-            {
-
-            }
+            
         }
         return false;
-    }
-
-    private bool IsEnemyPatrollingInCell(Cell cell)
-    {
-        foreach (Enemy enemy in enemies)
-        {
-            List<Cell> patrollingCells = GetEnemyPatrollingCells(enemy);
-            if (patrollingCells.Contains(cell)) 
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private List<Cell> GetEnemyPatrollingCells(Enemy enemy)
-    {
-        List<Cell> cells = new List<Cell>();
-        List<Vector3> waypoints = enemy.GetPatrollingWayPoints();
-
-        foreach (Vector3 waypoint in waypoints)
-        {
-            cells.Add(mazeGrid[((int)waypoint.x), ((int)waypoint.z)]);
-        }
-
-        return cells;
     }
 
     private Cell GetCurrentCellOfPlayer(Player player)
