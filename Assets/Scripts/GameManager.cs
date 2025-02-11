@@ -29,17 +29,19 @@ public class GameManager : MonoBehaviour
     public List<Cell> playerSafeSpace = new List<Cell>();
 
     public bool gameOver;
+
+    public Difficulty difficulty = Difficulty.Medium;
     
     void Awake()
     {
         if (instance == null)
         {
             instance = this;
-            DontDestroyOnLoad(gameObject); // Persist between scenes
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            Destroy(gameObject); // Prevent duplicates
+            Destroy(gameObject);
         }
         
     }
@@ -54,7 +56,20 @@ public class GameManager : MonoBehaviour
     {
        
     }
+    private Vector3 SnapToGrid(Vector3 position)
+    {
+        // snap position to the nearest cell center
+        float x = Mathf.Round(position.x / 1f) * 1f;
+        float z = Mathf.Round(position.z / 1f) * 1f;
 
+        return new Vector3(x, position.y, z);
+    }
+
+    public Cell GetCell(Vector3 position)
+    {
+        position = SnapToGrid(position);
+        return mazeGrid[((int)position.x), ((int)position.z)];
+    }
     public void InitAiController()
     {
         if (aiControlled)
@@ -156,12 +171,17 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         gameOver = false;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+        SceneManager.LoadScene("Game");
     }
 
     public void QuitToMenu()
     {
         gameOver = false;
+
+        Resources.UnloadUnusedAssets();
+        System.GC.Collect();
+
         SceneManager.LoadScene("MainMenu");
     }
 

@@ -214,7 +214,7 @@ public class MazeGenerator : MonoBehaviour
 
     private void InitDifficultyParameters()
     {
-        int difficulty = PlayerPrefs.GetInt("Difficulty");
+        int difficulty = ((int)GameManager.instance.difficulty);
         Debug.Log($"Generating maze with difficulty: {difficulty}");
         // TODO: set width, height, upgrades & enemies according do difficulty setting
 
@@ -225,14 +225,14 @@ public class MazeGenerator : MonoBehaviour
             enemyCounter = 1;
             upgradeCounter = 8;
         }
-        if (difficulty == 1 || true)
+        if (difficulty == 1)
         {
             mazeWidth = 10;
             mazeHeight = 10;
             enemyCounter = 4;
             upgradeCounter = 15;
         }
-        if (difficulty == 2 )
+        if (difficulty == 2)
         {
             mazeWidth = 15;
             mazeHeight = 15;

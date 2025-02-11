@@ -96,7 +96,7 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
-        
+        StopAllCoroutines();
         GameManager.instance.RemovePlayer(this);
     }
 

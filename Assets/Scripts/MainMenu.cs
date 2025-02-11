@@ -28,7 +28,7 @@ public class MainMenu : MonoBehaviour
 
     private void ChangeScene()
     {
-        PlayerPrefs.SetInt("Difficulty", (int)selectedDifficulty);
+        GameManager.instance.difficulty = selectedDifficulty;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);        
     }
 

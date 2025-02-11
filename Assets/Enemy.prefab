@@ -159,6 +159,8 @@ MonoBehaviour:
   rb: {fileID: 0}
   cellSize: 1
   targetPosition: {x: 0, y: 0, z: 0}
+  chasing: 0
+  player: {fileID: 0}
 --- !u!54 &8427665624274672127
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -226,5 +228,5 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.5
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}

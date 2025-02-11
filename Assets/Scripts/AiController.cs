@@ -43,7 +43,6 @@ public class AIController : MonoBehaviour
 
     private void Start()
     {
-        
     }
 
     public void Init(List<Player> players, List<Enemy> enemies, List<Upgrade> upgrades, Goal goal, Cell[,] mazeGrid)
@@ -68,7 +67,8 @@ public class AIController : MonoBehaviour
 
         for(int i = 0; i < players.Count; i++)
         {
-            Cell start = mazeGrid[((int)players[i].transform.position.x), ((int)players[i].transform.position.z)];
+            
+            Cell start = GetCurrentCellOfPlayer(players[i]);
             Cell goalCell = GetGoalCell();
 
             List<Cell> path = pathFinder.FindPath(start, goalCell);

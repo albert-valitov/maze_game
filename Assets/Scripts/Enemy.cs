@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 using static Cell;
 using static UnityEngine.GraphicsBuffer;
 using static UnityEngine.UI.Image;
@@ -16,6 +17,8 @@ public class Enemy : MonoBehaviour
     public float cellSize = 1f;
     private Cell[,] mazeGrid;
     public Vector3 targetPosition;
+    public bool chasing = false;
+    public Player player;
     
     private Vector3 spawnLocation;
     private Vector3 currentDirection = Vector3.zero;
@@ -23,6 +26,7 @@ public class Enemy : MonoBehaviour
     private List<Vector3> positionHistory = new List<Vector3>();
     private int positionLimit = 6;
     private int historyLimit = 6;
+    private Cell lastSeenCell;
 
 
     Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
@@ -59,6 +63,14 @@ public class Enemy : MonoBehaviour
 
     private void Move(Vector3 target)
     {
+        if (chasing)
+        {
+            moveSpeed = 0.8f;
+        } else
+        {
+            moveSpeed = 0.2f;
+        }
+
         Vector3 newPosition = Vector3.MoveTowards(transform.position, target, Time.deltaTime * moveSpeed);
 
         transform.position = newPosition;
@@ -68,13 +80,27 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        Move(targetPosition);        
+        if (chasing) 
+        {
+            if (CanSeePlayer(player))
+            {
+                targetPosition = player.transform.position;
+                lastSeenCell = GetCellFromPosition(player.transform.position);
+            } 
+            else
+            {
+                chasing = false;
+                targetPosition = SnapToGrid(transform.position);
+            }
+        } 
 
-        if (transform.position == targetPosition)
+        if (transform.position == targetPosition && !chasing)
         {
             UpdatePostionHistory(targetPosition);
             targetPosition = GetNextWayPoint(transform.position);
-        }        
+        }
+
+        Move(targetPosition);       
     }
 
     private void UpdatePostionHistory(Vector3 position)
@@ -117,6 +143,89 @@ public class Enemy : MonoBehaviour
             {
                 Destroy(player.gameObject);
             }
+
+        }
+    }
+
+    /*
+     * Check if enemy can see player. True if no obstacle between between enemy and player. False if wall is bet
+     */
+    bool CanSeePlayer(Player player)
+    {
+        if (player == null)
+        {
+            chasing = false;
+            return false;
+        }
+
+        if (GameManager.instance.IsPlayerSafeSpace(GetCellFromPosition(player.transform.position)))
+        {
+            return false;
+        }
+
+        if (player.IsInvulnerable())
+        {
+            // do not chase invulnerable players
+            return false;
+        }
+
+        Vector3 direction = (player.transform.position - transform.position).normalized;
+        float distance = Vector3.Distance(transform.position, player.transform.position);
+        RaycastHit hit;
+        ;
+
+        if (Physics.Raycast(transform.position, direction, out hit, distance))
+        {
+            bool canSeePlayer = hit.collider.CompareTag("Player");
+            string tag = hit.collider.tag;
+            return canSeePlayer;
+        }
+
+        return false;
+    }
+
+    Cell GetCellFromPosition(Vector3 position)
+    {
+        
+        return GameManager.instance.GetCell(position);
+    }
+
+    private void LookForPlayer(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            if (GameManager.instance.IsPlayerSafeSpace(GetCellFromPosition(other.transform.position)))
+            {
+                // do not chase players when in safe space
+                return;
+            }
+
+            if (chasing)
+            {
+                // already chasing someone
+                return;
+            }
+
+            // start chasing player if can see him else go to cell that player was in when the player triggered
+            if (CanSeePlayer(other.GetComponent<Player>()))
+            {
+                chasing = true;
+                this.player = other.GetComponent<Player>();
+                lastSeenCell = GetCellFromPosition(other.transform.position);
+            }
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        LookForPlayer((Collider)other);
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (!chasing)
+        {
+            LookForPlayer((Collider)other);
         }
     }
 
@@ -216,68 +325,24 @@ public class Enemy : MonoBehaviour
         return bestDirection;
     }
 
-    private Vector3 GetRandomValidDirection(Vector3 currentDirection, Vector3 position)
-    {
-        // Possible movement directions
-        Vector3Int[] directions = { Vector3Int.forward, Vector3Int.right, Vector3Int.left, Vector3Int.back};
+    
+    //private bool IsPlayerInDirection(Vector3 direction, Vector3 position)
+    //{
+    //    // Check for a wall in the given direction using a raycast
+    //    RaycastHit hit;
+    //    Vector3 rayOrigin = position + Vector3.up * 0.5f;
 
-        foreach (Vector3Int direction in directions)
-        {
-            Vector3 targetPosition = position + direction;
+    //    //Debug.DrawRay(rayOrigin, direction, UnityEngine.Color.red, 5.0f); 
 
-            Cell currentCell = mazeGrid[((int)position.x), ((int)position.z)];
-            if (!currentCell.CanWalk(direction))
-            {
-                // wall blocks the way
-                continue;
-            }
+        
+    //    if (Physics.Raycast(position, direction, out hit, cellSize))
+    //    {
+    //        bool playerSeen = hit.collider.CompareTag("Player");
 
-            Cell targetCell = mazeGrid[((int)targetPosition.x), ((int)targetPosition.z)];
+    //        //Debug.Log("Object in the way: " + hit.collider.tag);
 
-           
-
-            // look for next posible direction
-            if (!IsObjectInDirection(direction, position) && direction != - currentDirection)
-            {
-                
-                if (GameManager.instance.IsPlayerSafeSpace(targetCell))
-                {
-                    // do not walk into player safe space
-                    continue;
-                }
-                
-                // no object in the way and no player safe space
-                return direction;
-            }
-        }
-
-        return - currentDirection;
-    }
-
-    private bool IsObjectInDirection(Vector3 direction, Vector3 position)
-    {
-        // Check for a wall in the given direction using a raycast
-        RaycastHit hit;
-        Vector3 rayOrigin = position + Vector3.up * 0.5f;
-
-        //Debug.DrawRay(rayOrigin, direction, UnityEngine.Color.red, 5.0f); 
-
-        // check at the center of the cell if wall/upgrade/goal is ahead - otherwise movement could be locked due to running into the small walls on the edges of a cell
-        if (Physics.Raycast(position, direction, out hit, cellSize))
-        {
-            //bool wallAhead = hit.collider.CompareTag("Wall");
-            bool upgradeAhead = hit.collider.CompareTag("Upgrade");
-            bool goalAhead = hit.collider.CompareTag("Goal");
-
-            //Debug.Log("Wall ahead: " + wallAhead + " || Position: " + position + " || Direction: " + direction);
-            //Debug.Log("Upgrade ahead: " + upgradeAhead + " || Position: " + position + " || Direction: " + direction);
-            //Debug.Log("Goal ahead: " + goalAhead + " || Position: " + position + " || Direction: " + direction);
-
-            //Debug.Log("Object in the way: " + hit.collider.tag);
-
-            // players are no obstacles therefore the enemy does not need to evade them
-            return  upgradeAhead || goalAhead;
-        }
-        return false;
-    }
+    //        return playerSeen;
+    //    }
+    //    return false;
+    //}
 }

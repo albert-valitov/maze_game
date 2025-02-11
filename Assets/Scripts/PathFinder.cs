@@ -2,7 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using static Cell;
 
-public class PathFinder : MonoBehaviour
+
+/*
+ * Pathfinding class for the AI Controller. Looks for a path from start to goal using Bellman-Ford algorithm. 
+ * Cells have different weights which may change depending on the current situation of the player (fast movement or invulnerable)
+ */
+public class PathFinder
 {
     public class Node
     {

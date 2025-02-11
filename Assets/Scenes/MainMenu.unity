@@ -246,6 +246,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameManager
       objectReference: {fileID: 0}
+    - target: {fileID: 9035842498084513549, guid: 1cf47f825d7bf074b9025c8c8b507f44, type: 3}
+      propertyPath: aIController
+      value: 
+      objectReference: {fileID: 1330444043343111080, guid: 1d638e0858503e5468313d42f011151e, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -336,7 +340,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 387846391}
         m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
-        m_MethodName: SetDifficultyHard
+        m_MethodName: SetDifficultyEasy
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1920,7 +1924,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 387846391}
         m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
-        m_MethodName: SetDifficultyHard
+        m_MethodName: SetDifficultyMedium
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
