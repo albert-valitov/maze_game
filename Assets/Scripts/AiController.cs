@@ -57,7 +57,7 @@ public class AIController : MonoBehaviour
 
         width = mazeGrid.GetLength(0);
         height = mazeGrid.GetLength(1);
-        pathFinder = new PathFinder(mazeGrid);
+        pathFinder = new PathFinder(mazeGrid, enemies);
 
         FindPathForPlayers();
     }

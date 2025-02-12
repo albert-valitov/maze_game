@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static Cell;
 
 
@@ -31,6 +32,7 @@ public class PathFinder
 
     private int width, height;
     private Cell[,] mazeGrid;
+    private List<Enemy> enemies;
 
     Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
         {
@@ -48,16 +50,16 @@ public class PathFinder
             {new Vector3Int(1, 0, 0), WallType.RightWall}
         };
 
-    public PathFinder(Cell[,] mazeGrid)
+    public PathFinder(Cell[,] mazeGrid, List<Enemy> enemies)
     {
         this.mazeGrid = mazeGrid;
+        this.enemies = enemies;
         width = mazeGrid.GetLength(0);
         height = mazeGrid.GetLength(1);
     }
 
     public List<Cell> FindPath(Cell start, Cell goal)
     {
-
         Dictionary<Cell, Node> nodes = new Dictionary<Cell, Node>();
         nodes[start] = new Node(start, 0, null, 3);
 
@@ -160,8 +162,35 @@ public class PathFinder
         return path;
     }
 
+    private Vector3 SnapToGrid(Vector3 position)
+    {
+        // snap position to the nearest cell center
+        float x = Mathf.Round(position.x / 1f) * 1f;
+        float z = Mathf.Round(position.z / 1f) * 1f;
+
+        return new Vector3(x, 0, z);
+    }
+
     private float GetWeight(Cell cell)
     {
+        foreach (Enemy enemy in enemies)
+        {
+            
+            Vector3Int position = Vector3Int.FloorToInt(SnapToGrid(enemy.transform.position));
+
+            if (IsOutOfBounds(position))
+            {
+                continue;
+            }
+
+            Cell enemyCell = GetCell(position);
+
+            if (cell == enemyCell)
+            {
+                return 100f;
+            }
+        }
+
         if (cell.isUpgradePlaced())
         {
             // motivate to walk a detour to pick up an upgrade
