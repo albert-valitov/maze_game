@@ -162,8 +162,6 @@ public class PathFinder
 
     private float GetWeight(Cell cell)
     {
-        // TODO: invincible & goal weighting
-
         if (cell.isUpgradePlaced())
         {
             // motivate to walk a detour to pick up an upgrade

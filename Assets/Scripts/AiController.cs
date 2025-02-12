@@ -21,10 +21,10 @@ public class AIController : MonoBehaviour
     private int width;
     private int height;
     private Player focusedPlayer;
-    private int nextWaypointIndex;
     public float waypointThreshold = 0.1f;
     public float cellSize = 1f;
     private PathFinder pathFinder;
+    private Cell lastWayPoint;
 
     Dictionary<WallType, Vector3Int> possibleDirections = new Dictionary<WallType, Vector3Int>
         {
@@ -58,7 +58,6 @@ public class AIController : MonoBehaviour
         width = mazeGrid.GetLength(0);
         height = mazeGrid.GetLength(1);
         pathFinder = new PathFinder(mazeGrid);
-        nextWaypointIndex = 1;
 
         FindPathForPlayers();
     }
@@ -82,7 +81,6 @@ public class AIController : MonoBehaviour
                 focusedPlayer = players[i];
             }
         }
-        nextWaypointIndex = 0;
         return focusedPlayer;
     }
 
@@ -105,33 +103,37 @@ public class AIController : MonoBehaviour
             focusedPlayer = FindPathForPlayers();
             Debug.Log("NEW FOCUSED PLAYER FOUND");
         }
-
-        List<Cell> path = focusedPlayer.GetPathToGoal();
+        
+        List<Cell> path = pathFinder.FindPath(lastWayPoint ?? GetCurrentCellOfPlayer(focusedPlayer), GetGoalCell());
+        focusedPlayer.SetPathToGoal(path);
 
         // if there are no waypoints or the player has reached the final one, stop moving
-        if (path == null || nextWaypointIndex >= path.Count)
+        if (path == null)
         {
             return;
         }
-    
-        Vector3 targetPosition = path[nextWaypointIndex].transform.position;
+
+        Vector3 targetPosition = path.Count < 2 ? path.First().transform.position : path[1].transform.position;
+        Vector3 direction = (targetPosition - focusedPlayer.transform.position).normalized;
 
         // move focused player to target position and all other players in that direction
-        MoveAllPlayers(targetPosition);
+        MoveAllPlayers(direction);
         
-        Vector3 moveDirection = (targetPosition - focusedPlayer.transform.position).normalized;
+        //Vector3 moveDirection = (targetPosition - focusedPlayer.transform.position).normalized;
 
-        // check if focused player is stuck
-        if (IsPlayerStuck(moveDirection))
-        {
-            SnapPlayerToAxis(moveDirection * -1);
-        }
+        //// check if focused player is stuck
+        //if (IsPlayerStuck(moveDirection))
+        //{
+        //    SnapPlayerToAxis(moveDirection * -1);
+        //}
 
         // check if the player has reached the waypoint
+        
         if (focusedPlayer.transform.position == targetPosition)
         {
             // go to the next waypoint
-            nextWaypointIndex++;
+            
+            lastWayPoint = path.Count < 2 ? path.First() : path[1]; 
         }
     }
 
@@ -157,16 +159,9 @@ public class AIController : MonoBehaviour
         return false; 
     }
 
-    private List<Player> GetEndangeredPlayers(Vector3 targetPosition)
+    private List<Player> GetEndangeredPlayers(Vector3 direction)
     {
         List<Player> endangeredPlayers = new List<Player>();
-
-        Vector3Int direction = Vector3Int.FloorToInt((targetPosition - GetCurrentCellOfPlayer(focusedPlayer).transform.position).normalized);
-
-        if (direction == Vector3.zero)
-        {
-            return endangeredPlayers;
-        }
 
         foreach (Player player in players)
         {
@@ -252,16 +247,23 @@ public class AIController : MonoBehaviour
         return false;
     }
 
-    private bool IsNextMoveDangerous(Vector3Int direction, Player player)
+    private bool IsNextMoveDangerous(Vector3 direction, Player player)
     {
-        bool isDangerous = false;
-        
+        bool isDangerous = false;        
+
+        Vector3Int cellToCellDirection = Vector3Int.FloorToInt((focusedPlayer.GetPathToGoal().First().transform.position - GetCurrentCellOfPlayer(focusedPlayer).transform.position).normalized);
+
         Cell currentCell = GetCurrentCellOfPlayer(player);
         Cell target = currentCell;
 
-        if (currentCell.CanWalk(direction))
+        if (cellToCellDirection == Vector3.zero)
         {
-            target = GetNeighbourCell(currentCell, direction);
+            return false;
+        }
+
+        if (currentCell.CanWalk(cellToCellDirection))
+        {
+            target = GetNeighbourCell(currentCell, cellToCellDirection);
 
             if (target == null)
             {
@@ -330,7 +332,7 @@ public class AIController : MonoBehaviour
         float x = Mathf.Round(position.x / cellSize) * cellSize;
         float z = Mathf.Round(position.z / cellSize) * cellSize;
 
-        return new Vector3(x, position.y, z);
+        return new Vector3(x, 0, z);
     }
 
     private bool IsPlayerStuck(Vector3 direction)
@@ -371,29 +373,39 @@ public class AIController : MonoBehaviour
 
     }
 
-    private void MoveAllPlayers(Vector3 targetPosition)
+    private void MoveAllPlayers(Vector3 direction)
     {
-        List<Player> endangeredPlayers = GetEndangeredPlayers(targetPosition);
+        //List<Player> endangeredPlayers = GetEndangeredPlayers(direction);
 
-        if (endangeredPlayers.Count > 0)
+        //if (endangeredPlayers.Count > 0)
+        //{
+        //    ChangePlayer(endangeredPlayers);
+        //}
+        //else
+        //{ 
+        //    focusedPlayer.MoveToTarget(direction);
+
+        //    foreach (var player in players)
+        //    {
+        //        if (player == focusedPlayer)
+        //        {
+        //            continue;
+        //        }
+
+        //        player.Move(direction);
+        //    }
+        //}
+        
+        //focusedPlayer.MoveToTarget(direction);
+
+        foreach (var player in players)
         {
-            ChangePlayer(endangeredPlayers);
-        }
-        else
-        {
-            Vector3 direction = (targetPosition - focusedPlayer.transform.position).normalized;
+            //if (player == focusedPlayer)
+            //{
+            //    continue;
+            //}
 
-            focusedPlayer.MoveToTarget(targetPosition);
-
-            foreach (var player in players)
-            {
-                if (player == focusedPlayer)
-                {
-                    continue;
-                }
-
-                player.Move(direction);
-            }
+            player.Move(direction);
         }
     }
 

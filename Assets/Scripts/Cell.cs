@@ -53,9 +53,9 @@ public class Cell : MonoBehaviour
         return walkableDirections.ContainsKey(wallType) && walkableDirections[wallType];
     }
 
-    public bool CanWalk(Vector3Int position)
+    public bool CanWalk(Vector3Int direction)
     {
-        return CanWalk(directionToWallType[position]);
+        return CanWalk(directionToWallType[direction]);
     }
 
     public void SetVisited()
