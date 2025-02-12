@@ -73,6 +73,7 @@ public class Cell : MonoBehaviour
         // the position within the maze grid
         this.position = position;
     }
+
     public void BreakWall(WallType wallType)
     {
         GameObject wall = null;

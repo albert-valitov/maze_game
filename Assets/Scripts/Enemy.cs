@@ -65,7 +65,7 @@ public class Enemy : MonoBehaviour
     {
         if (chasing)
         {
-            moveSpeed = 0.8f;
+            moveSpeed = 0.5f;
         } else
         {
             moveSpeed = 0.2f;
@@ -150,7 +150,7 @@ public class Enemy : MonoBehaviour
     /*
      * Check if enemy can see player. True if no obstacle between between enemy and player. False if wall is bet
      */
-    bool CanSeePlayer(Player player)
+    public bool CanSeePlayer(Player player)
     {
         if (player == null)
         {

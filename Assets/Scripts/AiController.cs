@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using System.Linq;
 using System.IO;
 using TMPro;
+using static UnityEngine.GraphicsBuffer;
 
 
 public class AIController : MonoBehaviour
@@ -41,8 +42,9 @@ public class AIController : MonoBehaviour
             {new Vector3Int(1, 0, 0), WallType.RightWall}
         };
 
-    private void Start()
+    void Awake()
     {
+        DontDestroyOnLoad(gameObject);
     }
 
     public void Init(List<Player> players, List<Enemy> enemies, List<Upgrade> upgrades, Goal goal, Cell[,] mazeGrid)
@@ -134,13 +136,13 @@ public class AIController : MonoBehaviour
     }
 
     /*
-     * When a player, who is not the focused player walks into an upgrade the ai has to focus on that player, since all others can not move
+     * Change the player the AI should focus on. Returns true if player was changed, false if player is already the focused player. 
      */
-    public void ChangeFocusedPlayer(Player player)
+    public bool ChangeFocusedPlayer(Player player)
     {
         if (focusedPlayer != player)
         {
-            Debug.Log("NEW FOCUSED PLAYER CHANGE DUE TO UPGRADE ACTIVATION");
+            //Debug.Log("NEW FOCUSED PLAYER CHANGE DUE TO UPGRADE ACTIVATION");
 
             Cell currentCell = GetCurrentCellOfPlayer(player);
 
@@ -148,41 +150,139 @@ public class AIController : MonoBehaviour
             player.SetPathToGoal(path);
 
             focusedPlayer = player;
+
+            return true;
         }
+
+        return false; 
     }
 
     private List<Player> GetEndangeredPlayers(Vector3 targetPosition)
     {
         List<Player> endangeredPlayers = new List<Player>();
 
-        Vector3Int direction = Vector3Int.FloorToInt((targetPosition - focusedPlayer.transform.position).normalized);
+        Vector3Int direction = Vector3Int.FloorToInt((targetPosition - GetCurrentCellOfPlayer(focusedPlayer).transform.position).normalized);
+
+        if (direction == Vector3.zero)
+        {
+            return endangeredPlayers;
+        }
 
         foreach (Player player in players)
         {
-            //Cell currentCell = GetCurrentCellOfPlayer(player);
-
-            //if (!currentCell.CanWalk(directionToWallType[direction]))
-            //{
-            //    // can not walk in that direction - no danger
-            //    continue;
-            //}
-            //if (IsEnemyPatrollingInCell(currentCell))
-            //{
-
-            //}
+            if (IsNextMoveDangerous(direction, player))
+            {
+                endangeredPlayers.Add(player);
+            }
         }
 
         return endangeredPlayers;
     }
 
-    private bool IsNextMoveDangerous()
+    private Cell GetNeighbourCell(Cell cell, Vector3Int direction)
     {
-        foreach (Player player in players)
+        int x = ((int)cell.transform.position.x) + direction.x;
+        int z = ((int)cell.transform.position.z) + direction.z;
+
+        int mazeWidth = mazeGrid.GetLength(0);
+        int mazeHeight = mazeGrid.GetLength(1);
+
+        if (x < 0 || x > mazeWidth - 1 || z < 0 || z > mazeHeight - 1)
         {
-            Cell currentCell = GetCurrentCellOfPlayer(player);
-            
+            return null;
         }
+
+        return mazeGrid[x, z];
+    }
+
+    private bool IsEnemyInCell(Enemy enemy, Cell cell)
+    {
+        Vector3 position = SnapToGrid(enemy.transform.position);
+
+        return position == cell.transform.position;
+    }
+
+    private bool IsEnemyAround(Cell cell, Player player)
+    {
+        foreach (Enemy enemy in enemies)
+        {
+            if (IsEnemyInCell(enemy, cell))
+            {
+                return true;
+            }
+        }
+
+        foreach (var dir in possibleDirections)
+        {
+            if (cell.CanWalk(dir.Value))
+            {
+                Cell neighbour = mazeGrid[((int)cell.transform.position.x) + dir.Value.x, ((int)cell.transform.position.z) + dir.Value.z];
+
+                foreach (Enemy enemy in enemies)
+                {
+                    if (IsEnemyInCell(enemy, neighbour))
+                    {
+                        if (enemy.CanSeePlayer(player))
+                        {
+                            // enemy is chasing player
+                            return true;
+                        }
+                        if (WillEnemySeePlayer(enemy, player))
+                        {
+                            // enemy is walking towards player and will see him if player walks into that direction
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
         return false;
+    }
+
+    private bool WillEnemySeePlayer(Enemy enemy, Player player)
+    {
+        Vector3 dirTowardsPlayer = GetCurrentCellOfPlayer(player).transform.position - enemy.transform.position;
+        if (enemy.getCurrentDirection() == dirTowardsPlayer)
+        {
+            // enemy is walking towards player
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsNextMoveDangerous(Vector3Int direction, Player player)
+    {
+        bool isDangerous = false;
+        
+        Cell currentCell = GetCurrentCellOfPlayer(player);
+        Cell target = currentCell;
+
+        if (currentCell.CanWalk(direction))
+        {
+            target = GetNeighbourCell(currentCell, direction);
+
+            if (target == null)
+            {
+                // should not happen but safety first 
+                target = currentCell;
+            }            
+        }
+
+        if (IsEnemyAround(target, player))
+        {
+            // enemy is around the target location
+            isDangerous = true;
+        }
+
+        if (GameManager.instance.IsPlayerSafeSpace(target))
+        {
+            // player is in safe space (spawn location)
+            isDangerous = false;
+        }        
+
+        return isDangerous;
     }
 
     private Cell GetCurrentCellOfPlayer(Player player)
@@ -259,22 +359,41 @@ public class AIController : MonoBehaviour
         focusedPlayer.MoveToTarget(targetPosition);
     }
 
+    private void ChangePlayer(List<Player> endangeredPlayers)
+    {
+        //foreach (Player player in endangeredPlayers)
+        //{
+        //    if (ChangeFocusedPlayer(player))
+        //    {
+        //        return;
+        //    }
+        //}
+
+    }
+
     private void MoveAllPlayers(Vector3 targetPosition)
     {
-        GetEndangeredPlayers(targetPosition);
-        
-        Vector3 direction = (targetPosition - focusedPlayer.transform.position).normalized;
+        List<Player> endangeredPlayers = GetEndangeredPlayers(targetPosition);
 
-        focusedPlayer.MoveToTarget(targetPosition);
-
-        foreach (var player in players)
+        if (endangeredPlayers.Count > 0)
         {
-            if (player == focusedPlayer)
-            {
-                continue;
-            }
+            ChangePlayer(endangeredPlayers);
+        }
+        else
+        {
+            Vector3 direction = (targetPosition - focusedPlayer.transform.position).normalized;
 
-            player.Move(direction);
+            focusedPlayer.MoveToTarget(targetPosition);
+
+            foreach (var player in players)
+            {
+                if (player == focusedPlayer)
+                {
+                    continue;
+                }
+
+                player.Move(direction);
+            }
         }
     }
 

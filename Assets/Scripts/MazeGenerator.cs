@@ -72,12 +72,10 @@ public class MazeGenerator : MonoBehaviour
 
         SetPlayerSafeSpace();
         BuildMaze();
-        GenerateMaze(null, mazeGrid[0, 0]);
         PlaceGoal(); 
         PlacePlayer();
         PlaceUpgrades();
         PlaceEnemy();
-
         
         GameManager.instance.InitAiController();
     }
@@ -223,21 +221,21 @@ public class MazeGenerator : MonoBehaviour
             mazeWidth = 5;
             mazeHeight = 5;
             enemyCounter = 1;
-            upgradeCounter = 8;
+            upgradeCounter = 4;
         }
         if (difficulty == 1)
         {
             mazeWidth = 10;
             mazeHeight = 10;
-            enemyCounter = 4;
-            upgradeCounter = 15;
+            enemyCounter = 6;
+            upgradeCounter = 8;
         }
         if (difficulty == 2)
         {
             mazeWidth = 15;
             mazeHeight = 15;
-            enemyCounter = 6;
-            upgradeCounter = 10;
+            enemyCounter = 10;
+            upgradeCounter = 12;
         }
     }
 
@@ -252,7 +250,7 @@ public class MazeGenerator : MonoBehaviour
         players.Add(Instantiate(player, new Vector3(0, 0, mazeHeight - 1), Quaternion.identity));
         players.Add(Instantiate(player, new Vector3(mazeWidth - 1, 0, mazeHeight - 1), Quaternion.identity));
 
-        Debug.Log("Players on init: " + players.Count);
+        //Debug.Log("Players on init: " + players.Count);
         GameManager.instance.SetPlayers(players);
     }
 
@@ -284,14 +282,13 @@ public class MazeGenerator : MonoBehaviour
             return false;
         }
 
-        if (IsValidPlacement(mazeGrid[x, z]))
-        {
-            return ValidateArea(x, z);
-        }
-        return false;
+        return true;
     }
 
-    // checks if an enemy is already placed in the surrounding cells
+    /*
+     * (Was used when enemies patrolled a given path, not used anymore since they patroll the whole maze)
+     * checks if an enemy is already placed in the surrounding cells
+     */
     private bool ValidateArea(int x, int z)
     {
         if (x + 1 < mazeWidth && x != 0 && z + 1 < mazeHeight && z != 0)

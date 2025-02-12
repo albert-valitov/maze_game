@@ -11,6 +11,7 @@ public class MainMenu : MonoBehaviour
     {
         // preselect medium difficulty as default
         mediumDifficulty.Select();
+        selectedDifficulty = Difficulty.Medium;
     }
     public void OnPlay()
     {
