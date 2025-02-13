@@ -52,4 +52,10 @@ public class MainMenu : MonoBehaviour
     {
         selectedDifficulty = Difficulty.Hard;
     }
+
+    public void SetDifficultyVeryHard()
+    {
+        selectedDifficulty = Difficulty.VeryHard;
+    }
+
 }
