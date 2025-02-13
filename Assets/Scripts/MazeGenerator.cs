@@ -101,7 +101,7 @@ public class MazeGenerator : MonoBehaviour
     private void BuildMaze()
     {
         GenerateMaze(null, mazeGrid[0, 0]);
-        AlterMaze((mazeWidth * 2));
+        AlterMaze((mazeWidth * 3));
     }
 
     private void AlterMaze(int numWallsToBreak)
@@ -228,13 +228,20 @@ public class MazeGenerator : MonoBehaviour
             mazeWidth = 10;
             mazeHeight = 10;
             enemyCounter = 6;
-            upgradeCounter = 8;
+            upgradeCounter = 10;
         }
         if (difficulty == 2)
         {
+            mazeWidth = 10;
+            mazeHeight = 10;
+            enemyCounter = 10;
+            upgradeCounter = 10;
+        }
+        if (difficulty == 3)
+        {
             mazeWidth = 15;
             mazeHeight = 15;
-            enemyCounter = 8;
+            enemyCounter = 15;
             upgradeCounter = 10;
         }
     }

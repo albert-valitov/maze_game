@@ -58,6 +58,49 @@ public class PathFinder
         height = mazeGrid.GetLength(1);
     }
 
+    public void SortPositionsByDistance(Vector3Int playerPos, List<Vector3Int> positions)
+    {
+        positions.Sort((a, b) =>
+            SquaredDistance(playerPos, a).CompareTo(SquaredDistance(playerPos, b))
+        );
+    }
+
+    // Helper method to calculate squared distance between two grid positions.
+    private int SquaredDistance(Vector3Int a, Vector3Int b)
+    {
+        int dx = a.x - b.x;
+        int dz= a.z - b.z;
+        return dx * dx + dz * dz;
+    }
+
+    public List<Cell> FindPathToSafety(Player player)
+    {
+        Vector3Int playerPosition = Vector3Int.FloorToInt(SnapToGrid(player.transform.position));
+        Cell playerCell = GetCell(playerPosition);
+
+        List<Cell> safeSpaces = GameManager.instance.playerSafeSpace;
+        List<Vector3Int> safePositions = new List<Vector3Int>();
+
+        foreach (Cell cell in safeSpaces)
+        {
+            safePositions.Add(Vector3Int.FloorToInt(cell.transform.position));
+        }
+
+        SortPositionsByDistance(playerPosition, safePositions);
+
+        foreach (Vector3Int pos in safePositions)
+        {
+            List<Cell> path = FindPath(playerCell, GetCell(pos));
+
+            if (path.Count > 0)
+            {
+                return path;
+            }
+        }
+
+        return new List<Cell>();
+    }
+
     public List<Cell> FindPath(Cell start, Cell goal)
     {
         Dictionary<Cell, Node> nodes = new Dictionary<Cell, Node>();
@@ -140,6 +183,7 @@ public class PathFinder
 
     private List<Cell> ReconstructPath(Dictionary<Cell, Node> nodes, Cell goal)
     {
+
         List<Cell> path = new List<Cell>();
 
         if (!nodes.ContainsKey(goal)) 
@@ -197,6 +241,7 @@ public class PathFinder
             {
                 return float.PositiveInfinity;
             }
+       
         }
 
         if (cell.isUpgradePlaced())

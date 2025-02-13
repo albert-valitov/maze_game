@@ -23,6 +23,7 @@ public class Upgrade : AbstractUpgrade
         {
             if (other.GetComponent<Player>() != null)
             {
+                GameManager.instance.score++;
                 // apply upgrade effect to player object
                 GameManager.instance.ApplyUpgradeEffect(other.GetComponent<Player>());
                 GameManager.instance.ChangeFocusedPlayer(other.GetComponent<Player>());

@@ -30,6 +30,8 @@ public class GameManager : MonoBehaviour
 
     public bool gameOver;
 
+    public int score = 0;
+
     public Difficulty difficulty;
     
     void Awake()

@@ -88,13 +88,49 @@ public class AIController : MonoBehaviour
         return mazeGrid[((int)goal.transform.position.x), ((int)goal.transform.position.z)];
     }
 
+    private Player IsPlayerInDanger()
+    {
+        foreach (Player player in players)
+        {
+            if (GameManager.instance.IsPlayerSafeSpace(GetCurrentCellOfPlayer(player)))
+            {
+                // player is in safe space - enemies can not harm him
+                continue;
+            }
+
+            if (IsEnemyAround(GetCurrentCellOfPlayer(player), player))
+            {
+                return player;
+            }
+        }
+
+        return null;
+    }
+
+    private void SafePlayer(Player endangeredPlayer)
+    {
+        
+    }
+
     void Update()
     {
-        if (players == null || players.Count == 0) 
+        if (players == null || players.Count == 0)
         {
             // no players left - game over
             return;
         }
+
+        Player endangeredPlayer = IsPlayerInDanger();
+
+        if (endangeredPlayer != null)
+        {
+            if (endangeredPlayer != focusedPlayer)
+            {
+                Debug.Log("Player is in danger - change focused player");
+                ChangeFocusedPlayer(endangeredPlayer);
+                //return;
+            }
+        }        
 
         if (focusedPlayer == null)
         {
@@ -107,13 +143,22 @@ public class AIController : MonoBehaviour
         List<Cell> path = pathFinder.FindPath(lastWayPoint ?? GetCurrentCellOfPlayer(focusedPlayer), GetGoalCell());
         focusedPlayer.SetPathToGoal(path);
 
-        // if there are no waypoints or the player has reached the final one, stop moving
-
         if (path.Count == 0)
         {
-            GetNextViablePlayer();
-            lastWayPoint = null;
-            return;
+            if (endangeredPlayer != null && endangeredPlayer == focusedPlayer)
+            {
+                // player is in danger, try finding a safe path.
+                path = pathFinder.FindPathToSafety(focusedPlayer);
+                focusedPlayer.SetPathToGoal(path);
+            }
+
+            // if still no path available, move to the next viable player.
+            if (path.Count == 0)
+            {
+                GetNextViablePlayer();
+                lastWayPoint = null;
+                return;
+            }
         }
 
         if (path == null)
@@ -147,7 +192,7 @@ public class AIController : MonoBehaviour
                 }
             }
         }
-    }
+    }   
 
     /*
      * Change the player the AI should focus on. Returns true if player was changed, false if player is already the focused player. 
@@ -413,7 +458,7 @@ public class AIController : MonoBehaviour
             //{
             //    continue;
             //}
-
+            Debug.Log("Moving players");
             player.Move(direction);
         }
     }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.Rendering.DebugUI;
 
 public class GameOver : MonoBehaviour
 {
@@ -12,9 +13,16 @@ public class GameOver : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
         if (GameManager.instance.gameOver)
         {
             gameOverPanel.SetActive(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            // Activate the panel.
+            gameOverPanel.SetActive(!gameOverPanel.activeSelf);
         }
     }
 
