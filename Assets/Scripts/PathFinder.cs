@@ -98,7 +98,7 @@ public class PathFinder
                         if (newStepsSinceUpgrade <= 3)
                         {
                             // upgrade was picked up recently - treat it like a regular/empty cell 
-                            baseCost = 1;
+                            baseCost = 1;                        
                         } else
                         {
                             // upgrade is picked up - reset the counter
@@ -119,7 +119,7 @@ public class PathFinder
             {
                 break;
             }
-            
+
         }
 
         return ReconstructPath(nodes, goal);
@@ -150,11 +150,19 @@ public class PathFinder
        
 
         Node current = nodes[goal];
+        float cost = 0f;
 
         while (current != null)
         {
+            cost += current.cost;
             path.Add(current.cell);
             current = current.parent;
+        }
+
+        if (cost == float.PositiveInfinity)
+        {
+            // no viable path exists - player would have to move through enemy
+            return new List<Cell>();
         }
 
         path.Reverse();
@@ -170,7 +178,7 @@ public class PathFinder
 
         return new Vector3(x, 0, z);
     }
-
+    
     private float GetWeight(Cell cell)
     {
         foreach (Enemy enemy in enemies)
@@ -181,13 +189,13 @@ public class PathFinder
             if (IsOutOfBounds(position))
             {
                 continue;
-            }
+            }            
 
             Cell enemyCell = GetCell(position);
 
             if (cell == enemyCell)
             {
-                return 100f;
+                return float.PositiveInfinity;
             }
         }
 

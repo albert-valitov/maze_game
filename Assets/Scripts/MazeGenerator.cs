@@ -234,8 +234,8 @@ public class MazeGenerator : MonoBehaviour
         {
             mazeWidth = 15;
             mazeHeight = 15;
-            enemyCounter = 10;
-            upgradeCounter = 12;
+            enemyCounter = 8;
+            upgradeCounter = 10;
         }
     }
 

@@ -103,11 +103,19 @@ public class AIController : MonoBehaviour
             focusedPlayer = FindPathForPlayers();
             Debug.Log("NEW FOCUSED PLAYER FOUND");
         }
-        
+
         List<Cell> path = pathFinder.FindPath(lastWayPoint ?? GetCurrentCellOfPlayer(focusedPlayer), GetGoalCell());
         focusedPlayer.SetPathToGoal(path);
 
         // if there are no waypoints or the player has reached the final one, stop moving
+
+        if (path.Count == 0)
+        {
+            GetNextViablePlayer();
+            lastWayPoint = null;
+            return;
+        }
+
         if (path == null)
         {
             return;
@@ -119,21 +127,25 @@ public class AIController : MonoBehaviour
         // move focused player to target position and all other players in that direction
         MoveAllPlayers(direction);
         
-        //Vector3 moveDirection = (targetPosition - focusedPlayer.transform.position).normalized;
-
-        //// check if focused player is stuck
-        //if (IsPlayerStuck(moveDirection))
-        //{
-        //    SnapPlayerToAxis(moveDirection * -1);
-        //}
-
         // check if the player has reached the waypoint
-        
         if (focusedPlayer.transform.position == targetPosition)
         {
-            // go to the next waypoint
-            
+            // go to the next waypoint            
             lastWayPoint = path.Count < 2 ? path.First() : path[1]; 
+        }
+    }
+
+    public void GetNextViablePlayer()
+    {
+        foreach (Player player in players)
+        {
+            if (ChangeFocusedPlayer(player))
+            {
+                if (player.GetPathToGoal().Count > 0)
+                {
+                    return;
+                }
+            }
         }
     }
 
@@ -361,15 +373,15 @@ public class AIController : MonoBehaviour
         focusedPlayer.MoveToTarget(targetPosition);
     }
 
-    private void ChangePlayer(List<Player> endangeredPlayers)
+    private void ChangePlayer(List<Player> allowedPlayers)
     {
-        //foreach (Player player in endangeredPlayers)
-        //{
-        //    if (ChangeFocusedPlayer(player))
-        //    {
-        //        return;
-        //    }
-        //}
+        foreach (Player player in allowedPlayers)
+        {
+            if (ChangeFocusedPlayer(player))
+            {
+                return;
+            }
+        }
 
     }
 
@@ -382,20 +394,17 @@ public class AIController : MonoBehaviour
         //    ChangePlayer(endangeredPlayers);
         //}
         //else
-        //{ 
-        //    focusedPlayer.MoveToTarget(direction);
-
+        //{
         //    foreach (var player in players)
         //    {
         //        if (player == focusedPlayer)
         //        {
-        //            continue;
         //        }
 
         //        player.Move(direction);
         //    }
         //}
-        
+
         //focusedPlayer.MoveToTarget(direction);
 
         foreach (var player in players)
